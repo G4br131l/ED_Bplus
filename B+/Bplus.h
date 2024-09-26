@@ -7,17 +7,21 @@ typedef enum { INT , FLOAT , STRING } Type;
     int length;
 } Dados; */
 
-typedef struct data {
+typedef struct Data {
     Type type;
     char value[16];
-} data;
+} Data;
+
+typedef struct Value {
+    node_bplus *rigth;
+    node_bplus *left;
+    Data data
+} Value;
 
 typedef struct node_bplus
 {
     bool folha;
-    struct node_bplus *rigth;
-    struct node_bplus *left;
-    data values[ORDER];
+    Value *values[ORDER];
 } node_bplus;
 
 /* typedef struct {

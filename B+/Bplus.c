@@ -72,6 +72,20 @@ void shift_node(node *no, int inicio) {
     for (int i = no->length; i > inicio; i--) {
         no->index[i] = no->index[i - 1];
     }
+
+    for (int i = no->length+1; i > inicio; i--) {
+        no->index[i] = no->index[i - 1];
+    }
+}
+
+void insert_in_node(node *no, node *before) {
+    int index = search_in_node(before, no->index[0]);
+    if (index != no->length)
+        shift_node(before, index);
+    
+    before->index[index] = no->index[0];
+    before->p[index] = no->p[0];
+    before->p[index+1] = no->p[1];
 }
 
 void insert_in_leaf(node *no, int value) {
@@ -123,9 +137,9 @@ void insert_in_leaf(node *no, int value) {
     else 
         insert_in_leaf(noR, value);
 
-    if (no->befor->length)
+    if (no->befor->length < ORDER)
     {
-        /* code */
+        insert_in_node(no, no->befor);
     }
     
 
@@ -181,7 +195,67 @@ void Bplus_insert(Bplus *tree, int value) {
     node_insert(tree->root, value);
 }
 
+void node_remove(node *no, int value, bool no_com_valor, node* no_value) {
+    if (!no->leaf) {
+        int cont = 0;
+        bool igual = false;
+        for (int i = 0; i < no->length; i++) {
+            if (no->index[i] < value) {
+                cont++;
+            }
+            if (no->index[i] == value) {
+                igual = true;
+            }
+        }
+        printf("%d---\n", cont);
+        node_remove(no->p[cont], value, igual, no);
+        return;
+    }
 
+    int local = -1;
+    for (int i = 0; i < no->length; i++)
+    {
+        if (no->index[i] == value) {
+            local = i;
+            no->length--;
+            for (int i = local; i < no->length; i++)
+            {
+                no->index[i] = no->index[i+1];
+            }
+            break;
+        }
+    }
+    
+    if (no_com_valor) {
+        for (int i = 0; i < no_value->length; i++)
+        {
+            if (no_value->index[i] == value)
+            {
+                no_value->index[i] = no->index[local];
+                break;
+            }
+        }
+    }
+}
+
+void Bplus_remove(Bplus *tree, int value) {
+    if (tree->root->leaf)
+    {
+        for (int i = 0; i < tree->root->length; i++)
+        {
+            if (tree->root->index[i] == value)
+            {
+                tree->root->length--;
+                for (int i = 0; i < tree->root->length; i++)
+                {
+                    tree->root->index[i] = tree->root->index[i+1];
+                }
+                break;
+            }
+        }
+    }
+    
+}
 
 // Função para imprimir a árvore B+ (para debug)
 void print_tree(node *n) {

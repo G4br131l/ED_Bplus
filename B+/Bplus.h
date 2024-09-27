@@ -10,6 +10,8 @@ typedef struct node {
     bool leaf;
     struct node *left;
     struct node *rigth;
+
+    bool (*comp)(void*, void*);
 } node;
 
 typedef struct Bplus {

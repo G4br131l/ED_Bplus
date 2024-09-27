@@ -328,6 +328,71 @@ void print_node(node* no) {
     printf("\n");
 }
 
+void Bplus_find(node *no, int value) {
+    if (!no) {
+        printf("Árvore está vazia ou nó nulo.\n");
+        return;
+    }
+
+    if (no->leaf) {
+        printf("Verificando nó folha com índices: ");
+        for (int i = 0; i < no->length; i++) {
+            printf("%d ", no->index[i]);
+        }
+        printf("\n");
+
+        for (int i = 0; i < no->length; i++) {
+            if (no->index[i] == value) {
+                printf("Valor %d encontrado na folha!\n", value);
+                return;
+            }
+        }
+        printf("Valor %d não encontrado na folha.\n", value);
+        return;
+    }
+
+    int i = 0;
+
+    while (i < no->length && value >= no->index[i]) {
+        if (value == no->index[i]) {
+            printf("Valor %d encontrado no nó interno!\n", value);
+            return;
+        }
+        i++;
+    }
+
+    Bplus_find(no->p[i], value);
+}
+
+void Bplus_findInterval(node *no, int low, int high) {
+    if (!no) {
+        printf("Árvore vazia.\n");
+        return;
+    }
+
+    if (!no->leaf) {
+        int i = 0;
+        while (i < no->length && low > no->index[i]) {
+            i++;
+        }
+        Bplus_findInterval(no->p[i], low, high);
+        return;
+    }
+
+    node *current = no;
+    while (current) {
+        for (int i = 0; i < current->length; i++) {
+            if (current->index[i] >= low && current->index[i] <= high) {
+                printf("Valor encontrado: %d\n", current->index[i]);
+            }
+        }
+        current = current->rigth;
+        if (current && current->index[0] > high) {
+            break;
+        }
+    }
+}
+
 int main() {
     Bplus *tree = Bplus_alloc();
 
@@ -345,6 +410,9 @@ int main() {
     Bplus_insert(tree, 110);
     Bplus_insert(tree, 120);
     
+    Bplus_find(tree->root, 10);
+    printf("\n");
+    Bplus_findInterval(tree->root, 20, 80);
 
     /* insert(tree, 10);
     insert(tree, 20);

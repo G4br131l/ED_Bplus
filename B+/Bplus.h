@@ -19,8 +19,8 @@ typedef struct Bplus {
 Bplus *Bplus_alloc();
 void Bplus_free(Bplus *tree);
 void Bplus_insert(Bplus *tree, int value);
-void Bplus_find(/*  */);
-void Bplus_findInterval(/*  */);
+void Bplus_find(node *no, int value);
+void Bplus_findInterval(node *no, int low, int high);
 void Bplus_remove(Bplus *tree, int value);
 
 void print_node(node* no);

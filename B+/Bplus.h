@@ -1,49 +1,27 @@
-typedef enum { INT , FLOAT , STRING } Type;
+#define ORDER 7
 
-#define ORDER 8
-
-/* typedef struct Dados {
-    char **dados;
+typedef struct node {
+    int index[ORDER]; // 0| a |1| b |2| c |3
     int length;
-} Dados; */
 
-typedef struct Data {
-    Type type;
-    char value[16];
-} Data;
+    struct node *befor;
+    struct node *p[4];
 
-typedef struct Value {
-    node_bplus *rigth;
-    node_bplus *left;
-    Data data
-} Value;
-
-typedef struct node_bplus
-{
-    bool folha;
-    Value *values[ORDER];
-} node_bplus;
-
-/* typedef struct {
-    int f_local;
-    int length;
-    int f_rigth;
-    int f_left;
-} leaf; */
-
+    bool leaf;
+    struct node *left;
+    struct node *rigth;
+} node;
 
 typedef struct Bplus {
-//    int id;
-    node_bplus *root;
-    Type type;
-//    char local[16];
+    node *root;
 } Bplus;
 
-Bplus *Bplus_alloc(Type);
+Bplus *Bplus_alloc();
 void Bplus_free(Bplus *tree);
-void Bplus_insert(Bplus *tree, char *value);
+void Bplus_insert(Bplus *tree, int value);
 void Bplus_find(/*  */);
 void Bplus_findInterval(/*  */);
-void Bplus_remove(Bplus *tree, void *value);
+void Bplus_remove(Bplus *tree, int value);
 
+void print_node(node* no);
 //void *Bplus_search(Bplus *tree, void *value);

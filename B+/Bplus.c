@@ -10,6 +10,7 @@ Bplus *Bplus_alloc() {
         exit(1);
     }
     tree->root = NULL;
+    tree->last_list = NULL;
 
     return tree;
 }

@@ -3,18 +3,19 @@
 #include <stdbool.h>
 #include "Bplus.h"
 
-Bplus *Bplus_alloc() {
+Bplus *Bplus_alloc(int (*comp)(void*a, void*b)) {
     Bplus *tree = malloc(sizeof(Bplus));
     if (!tree) {
         printf("erro alloc tree");
         exit(1);
     }
     tree->root = NULL;
+    tree->comp = comp;
 
     return tree;
 }
 
-node *node_alloc(bool leaf, bool (*comp)(void*,void*)) {
+node *node_alloc(bool leaf, int (*comp)(void*,void*)) {
     node *no = malloc(sizeof(node));
 
     no->length = 0;
@@ -35,9 +36,10 @@ void free_node(node *node) {
     if (node->leaf)
     {
         free(node);
+        return;
     }
     
-    for (int i = 0; i < 4; i++)
+    for (int i = 0; i < node->length+1; i++)
     {
         free_node(node->p[i]);
     }
@@ -87,17 +89,19 @@ void insert_in_node(node *no, node *before) {
     before->index[index] = no->index[0];
     before->p[index] = no->p[0];
     before->p[index+1] = no->p[1];
+
+    before->length++;
 }
 
-void insert_in_leaf(node *no, int value) {
+void insert_in_leaf(node *no, void* value) {
     if (no->length < ORDER) {
+        
         int index = search_in_node(no, value);
         if (index != no->length)
             shift_node(no, index);
         no->index[index] = value;
         no->length++;
-        print_node(no);
-        return NULL;
+        return;
     }
 
     node *noL = node_alloc(true, no->comp);
@@ -133,22 +137,16 @@ void insert_in_leaf(node *no, int value) {
     no->p[0] = noL;
     no->p[1] = noR;
 
+
     if (no->comp(value, no->index[0]) == 0)
         insert_in_leaf(noL, value);
     else 
         insert_in_leaf(noR, value);
 
-    if (no->befor->length < ORDER)
+    if (no->befor != NULL && no->befor->length < ORDER)
     {
         insert_in_node(no, no->befor);
     }
-    
-
-    print_node(no);
-    print_node(noL);
-    print_node(noR);
-
-    return noR;
 }
 
 void node_insert(node *no, void* value) {
@@ -160,25 +158,23 @@ void node_insert(node *no, void* value) {
                 cont++;
             }
         }
-        printf("%d---\n", cont);
         node_insert(no->p[cont], value);
         return;
     }
     
     insert_in_leaf(no, value);
-
 }
 
 void Bplus_insert(Bplus *tree, void* value) {
     if (!tree || !value)
     {
-        printf("erro inert");
+        printf("erro insert");
         return;
     }
     
     if (tree->root == NULL)
     {
-        node *no = node_alloc(true, no->comp);
+        node *no = node_alloc(true, tree->comp);
 
         no->leaf = true;
 
@@ -199,17 +195,15 @@ void Bplus_insert(Bplus *tree, void* value) {
 void node_remove(node *no, void* value, bool no_com_valor, node* no_value) {
     if (!no->leaf) {
         int cont = 0;
-        bool igual = false;
         for (int i = 0; i < no->length; i++) {
-            if (no->comp(no->index[i], value) == 0) {
+            if (no->comp(no->index[i], value) != 2) {
                 cont++;
             }
-            if (no->comp(no->index[i], value) == 1) {
-                igual = true;
+            if (no->comp(no->index[i], value) == 1 && !no_com_valor) {
+                no_com_valor = true;
             }
         }
-        printf("%d---\n", cont);
-        node_remove(no->p[cont], value, igual, no);
+        node_remove(no->p[cont], value, no_com_valor, no);
         return;
     }
 
@@ -256,29 +250,47 @@ void Bplus_remove(Bplus *tree, void* value) {
         }
     }
     
+    node_remove(tree->root, value, false, NULL);
 }
 
 // Função para imprimir a árvore B+ (para debug)
-void print_tree(node *n) {
+void print_tree(node *n, int profundidade, void (*print)(void*)) {
     if (n != NULL) {
-        for (int i = 0; i < n->length; i++) {
-            printf("%d ", n->index[i]);
+        for (int j = 0; j < profundidade; j++) {
+            printf("  ");
         }
-        printf("| ");
 
-        for (int i = 0; i < 4; i++)
+        for (int i = 0; i < n->length; i++) {
+            print(n->index[i]);
+        }
+        printf("\n");
+
+        if (!n->leaf)
         {
-            print_tree(n->p[i]);
+            for (int i = 0; i < n->length+1; i++)
+            {
+                print_tree(n->p[i], profundidade + 1, print);
+            }
         }
     }
 }
 
-void print_node(node* no) {
+void Bplus_print(Bplus *tree, void (*print)(void*)) {
+    if (!tree)
+    {
+        printf("erro print");
+        return;
+    }
+    
+    print_tree(tree->root, 0, print);
+}
+
+void print_node(node* no, void(*print)(void*)) {
     printf("%ld\n", no);
     printf("index: ");
     for (int i = 0; i < no->length; i++)
     {
-        printf("%d ", no->index[i]);
+        print( no->index[i]);
     }
     printf("\n");
     printf("legth: %d\n", no->length);
@@ -289,7 +301,7 @@ void print_node(node* no) {
     {
         for (int i = 0; i < no->befor->length; i++)
         {
-            printf("%d", no->befor->index[i]);
+            print(no->befor->index[i]);
         }
     }
     printf("\n");
@@ -304,7 +316,7 @@ void print_node(node* no) {
             {
                 for (int j = 0; j < no->p[i]->length; j++)
                 {
-                    printf("%d ", no->p[i]->index[j]);
+                    print(no->p[i]->index[j]);
                 }
             }
             printf("\n");
@@ -314,7 +326,7 @@ void print_node(node* no) {
         if (no->left != NULL)
         for (int i = 0; i < no->left->length; i++)
         {
-            printf("%d ", no->left->index[i]);
+            printf("%d ", *((int*) no->left->index[i]));
         }
         printf("\n");
         
@@ -322,111 +334,71 @@ void print_node(node* no) {
         if (no->rigth != NULL)
         for (int i = 0; i < no->rigth->length; i++)
         {
-            printf("%d ", no->rigth->index[i]);
+            print(no->rigth->index[i]);
         }
         printf("\n");
     }
     printf("\n");
 }
 
-void Bplus_find(node *no, void* value) {
+node *Bplus_find(node *no, void* value) {
     if (!no) {
         printf("Árvore está vazia ou nó nulo.\n");
-        return;
+        return NULL;
     }
 
     if (no->leaf) {
-        printf("Verificando nó folha com índices: ");
-        for (int i = 0; i < no->length; i++) {
-            printf("%d ", no->index[i]);
-        }
-        printf("\n");
-
         for (int i = 0; i < no->length; i++) {
             if (no->comp(no->index[i], value) == 1) {
-                printf("Valor %d encontrado na folha!\n", value);
-                return;
+                return no;
             }
         }
-        printf("Valor %d não encontrado na folha.\n", value);
-        return;
+        return NULL;
     }
 
     int i = 0;
 
-    while (i < no->length && value >= no->index[i]) {
-        if (no->comp(value, no->index[i]) == 1) {
-            printf("Valor %d encontrado no nó interno!\n", value);
-            return;
-        }
+    while (i < no->length && no->comp(value, no->index[i]) != 0) {
         i++;
     }
 
     Bplus_find(no->p[i], value);
 }
 
-void Bplus_findInterval(node *no, int low, int high) {
+node **Bplus_findInterval(node *no, void* low, void* high) {
     if (!no) {
         printf("Árvore vazia.\n");
-        return;
+        return NULL;
     }
 
     if (!no->leaf) {
         int i = 0;
-        while (i < no->length && low > no->index[i]) {
+        while (i < no->length && no->comp(low, no->index[i]) == 2) {
             i++;
         }
-        Bplus_findInterval(no->p[i], low, high);
-        return;
+        return Bplus_findInterval(no->p[i], low, high);
     }
 
-    node *current = no;
-    while (current) {
-        for (int i = 0; i < current->length; i++) {
-            if (current->index[i] >= low && current->index[i] <= high) {
-                printf("Valor encontrado: %d\n", current->index[i]);
-            }
-        }
-        current = current->rigth;
-        if (current && current->index[0] > high) {
+    node **retorno;
+    node *no_inicio = no, *no_fim = no;
+    int cont = 0, len_retorno = 0;
+
+    while (no_fim != NULL) {
+        if (no->comp(no_fim->index[0], high) == 2) {
             break;
         }
+        cont++;
+
+        no_fim = no_fim->rigth;
     }
-}
 
-int main() {
-    Bplus *tree = Bplus_alloc();
+    retorno = malloc((cont + 1) * sizeof(node*));
 
-    Bplus_insert(tree, 50);
-    Bplus_insert(tree, 60);
-    Bplus_insert(tree, 40);
-    Bplus_insert(tree, 70);
-    Bplus_insert(tree, 30);
-    Bplus_insert(tree, 80);
-    Bplus_insert(tree, 55);
-    Bplus_insert(tree, 20);
-    Bplus_insert(tree, 10);
-    Bplus_insert(tree, 90);
-    Bplus_insert(tree, 100);
-    Bplus_insert(tree, 110);
-    Bplus_insert(tree, 120);
+    for (node* i = no_inicio; i != no_fim; i = i->rigth)
+    {
+        retorno[len_retorno++] = i;
+    }
+    retorno[len_retorno] = NULL;
     
-    Bplus_find(tree->root, 10);
-    printf("\n");
-    Bplus_findInterval(tree->root, 20, 80);
-
-    /* insert(tree, 10);
-    insert(tree, 20);
-    insert(tree, 5);
-    insert(tree, 6);
-    insert(tree, 12);
-    insert(tree, 30);
-    insert(tree, 7);
-    insert(tree, 17);
-    printf("oi");
-
-    printf("Árvore B+:\n");
-    print_tree(tree->root); */
-
-    return 0;
+    return retorno;
 }
